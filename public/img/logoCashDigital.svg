@@ -1,0 +1,17 @@
+<svg viewBox="0 0 1200 400" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="400" fill="#ffffff"/>
+  
+  <defs>
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0066FF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00D68F;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <g transform="translate(600, 200)">
+    <text x="0" y="-30" font-family="'Arial Black', sans-serif" font-size="168" font-weight="900" fill="#0066FF" text-anchor="middle">Cash</text>
+    <text x="0" y="90" font-family="'Arial', sans-serif" font-size="156" font-weight="300" fill="#00D68F" text-anchor="middle">Digital</text>
+  </g>
+  
+  <text x="600" y="340" font-family="Arial, sans-serif" font-size="42" fill="#666666" text-anchor="middle" letter-spacing="6">TRANSFERENCIAS RÁPIDAS Y SEGURAS</text>
+</svg>
