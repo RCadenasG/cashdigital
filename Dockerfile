@@ -1,4 +1,4 @@
-FROM php:8.3-fpm
+FROM php:8.3-cli
 
 # Instala dependencias del sistema
 RUN apt-get update && apt-get install -y \
@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y \
     libonig-dev \
     libxml2-dev \
     libzip-dev \
+    libpq-dev \
     zip \
     unzip \
     && apt-get clean \
@@ -15,7 +16,8 @@ RUN apt-get update && apt-get install -y \
 
 # Instala extensiones de PHP
 RUN docker-php-ext-install \
-    pdo_mysql \
+    pdo_pgsql \
+    pgsql \
     mbstring \
     exif \
     pcntl \
@@ -58,6 +60,15 @@ RUN chown -R www-data:www-data /var/www/html && \
     chmod -R 755 /var/www/html/storage && \
     chmod -R 755 /var/www/html/bootstrap/cache
 
-EXPOSE 9000
+# Variables de entorno para Laravel
+ENV APP_ENV=production
+ENV APP_DEBUG=false
 
-CMD ["php-fpm"]
+EXPOSE 10000
+
+# Script de inicio con migraciones
+CMD php artisan migrate --force && \
+    php artisan config:cache && \
+    php artisan route:cache && \
+    php artisan view:cache && \
+    php artisan serve --host=0.0.0.0 --port=${PORT:-10000}
