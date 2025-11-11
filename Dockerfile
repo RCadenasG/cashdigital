@@ -37,24 +37,15 @@ RUN composer config --global process-timeout 2000 && \
     composer config --global allow-plugins true && \
     composer config platform.php 8.3.13
 
-# OPCIÓN 1: Si TIENES composer.lock (recomendado)
+# Usa UPDATE para regenerar el lock file y resolver conflictos
 RUN COMPOSER_MEMORY_LIMIT=-1 \
     COMPOSER_ALLOW_SUPERUSER=1 \
-    composer install \
+    composer update \
     --no-dev \
     --optimize-autoloader \
     --no-interaction \
     --no-scripts \
     --prefer-dist
-
-# OPCIÓN 2: Si NO tienes composer.lock (descomenta estas líneas y comenta las de arriba)
-# RUN COMPOSER_MEMORY_LIMIT=-1 \
-#     COMPOSER_ALLOW_SUPERUSER=1 \
-#     composer update \
-#     --no-dev \
-#     --optimize-autoloader \
-#     --no-interaction \
-#     --no-scripts
 
 # Copia el resto de la aplicación
 COPY . .
