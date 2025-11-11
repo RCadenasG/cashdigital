@@ -10,30 +10,37 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        // Crear usuario administrador
-        $adminUser = User::firstOrCreate(
-            ['email' => 'admin@example.com'],
+        // Usuario Admin
+        $admin = User::firstOrCreate(
+            ['email' => 'admin@cashdigital.com'],
             [
                 'name' => 'Administrador',
                 'password' => Hash::make('password'),
                 'telefono' => '999999999',
-                'estado' => 1,
             ]
         );
+        $admin->assignRole('admin');
 
-        $adminUser->assignRole('admin');
-
-        // Crear usuario estándar
+        // Usuario normal
         $user = User::firstOrCreate(
-            ['email' => 'usuario@example.com'],
+            ['email' => 'user@cashdigital.com'],
             [
-                'name' => 'Usuario Regular',
+                'name' => 'Usuario Normal',
                 'password' => Hash::make('password'),
-                'telefono' => '988888888',
-                'estado' => 1,
+                'telefono' => '888888888',
             ]
         );
+        $user->assignRole('user');
 
-        $user->assignRole('usuario');
+        // Cajero
+        $cajero = User::firstOrCreate(
+            ['email' => 'cajero@cashdigital.com'],
+            [
+                'name' => 'Cajero',
+                'password' => Hash::make('password'),
+                'telefono' => '777777777',
+            ]
+        );
+        $cajero->assignRole('cajero');
     }
 }

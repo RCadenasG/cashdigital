@@ -6,6 +6,7 @@ use App\Models\Cliente;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
+use Illuminate\Validation\Rule;
 
 #[Layout('layouts.app')]
 #[Title('Formulario de Cliente')]
@@ -22,7 +23,13 @@ class ClientesForm extends Component
     {
         return [
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:clientes,email,' . $this->id,
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('clientes', 'email')->ignore($this->id ?? null),
+            ],
+
             'telefono' => 'nullable|string|size:9',
             'direccion' => 'nullable|string|max:50',
             'estado' => 'required|integer|in:1,2',

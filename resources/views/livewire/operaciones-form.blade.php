@@ -89,7 +89,7 @@
                     <div style="display: flex; flex-direction: column;">
                         <label class="form-label text-white mb-2">Comisión (S/)</label>
                         <input class="form-control text-black" type="text"
-                            value="S/ {{ number_format($monto_comision, 2) }}" readonly
+                            value="S/ {{ number_format($monto_comision, 2) }}"
                             style="border-radius: 0.5rem; background-color: #e9ecef;" />
                         <small class="text-warning mt-1">Calculada automáticamente</small>
                     </div>

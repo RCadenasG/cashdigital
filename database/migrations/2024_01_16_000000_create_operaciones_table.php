@@ -10,12 +10,12 @@ return new class extends Migration
     {
         Schema::create('operaciones', function (Blueprint $table) {
             $table->id();
-            $table->unsignedInteger('cliente_id')->default(0);
-            $table->unsignedInteger('user_id')->default(0);
-            $table->unsignedInteger('tipo_pago')->default(0)->comment('1=Servicio, 2=Transferencia');
-            $table->unsignedInteger('servicio')->nullable();
-            $table->decimal('monto_pago', 7, 2)->unsigned()->default(0.00);
-            $table->decimal('monto_comision', 7, 2)->unsigned()->default(0.00);
+            $table->integer('cliente_id')->default(0);
+            $table->integer('user_id')->default(0);
+            $table->integer('tipo_pago')->default(0)->comment('1=Servicio, 2=Transferencia');
+            $table->integer('servicio')->nullable();
+            $table->decimal('monto_pago', 7, 2)->default(0.00);
+            $table->decimal('monto_comision', 7, 2)->default(0.00);
             $table->date('fecha')->nullable();
             $table->time('hora')->nullable();
             $table->timestamps();

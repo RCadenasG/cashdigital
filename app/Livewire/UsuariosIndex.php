@@ -59,6 +59,7 @@ class UsuariosIndex extends Component
     public function render()
     {
         $usuarios = User::query()
+            ->with('roles:name')
             ->where(function($query) {
                 $query->where('name', 'like', "%{$this->search}%")
                       ->orWhere('email', 'like', "%{$this->search}%")

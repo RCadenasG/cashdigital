@@ -33,4 +33,9 @@ class User extends Authenticatable
         ];
     }
 
-    protected $primaryKey = 'id';}
+    protected $primaryKey = 'id';
+
+    public $incrementing = true;
+
+    protected $keyType = 'int';
+}

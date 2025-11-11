@@ -44,7 +44,7 @@ class UsuariosForm extends Component
                 'required',
                 'email',
                 'max:255',
-                Rule::unique('users', 'email')->ignore($this->userId)
+                Rule::unique('users', 'email')->ignore($this->userId ?? null)
             ],
             'telefono' => 'nullable|string|max:20',
             'role_id' => 'required|exists:roles,id',

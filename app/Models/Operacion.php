@@ -26,12 +26,19 @@ class Operacion extends Model
         'monto_pago' => 'decimal:2',
         'monto_comision' => 'decimal:2',
         'fecha' => 'date',
-        'hora' => 'datetime:H:i',
         'cliente_id' => 'integer',
         'user_id' => 'integer',
         'tipo_pago' => 'integer',
         'servicio' => 'integer',
     ];
+
+    // Importante: en PostgreSQL, hora debe ser string, no datetime
+    protected function casts(): array
+    {
+        return [
+            'hora' => 'datetime:H:i',
+        ];
+    }
 
     // Relaciones
     public function cliente()
