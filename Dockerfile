@@ -66,9 +66,9 @@ ENV APP_DEBUG=false
 
 EXPOSE 10000
 
-# Script de inicio con migraciones
-CMD php artisan migrate --force && \
-    php artisan config:cache && \
-    php artisan route:cache && \
-    php artisan view:cache && \
+# Script de inicio con migraciones opcionales (usa || true para que no falle)
+CMD php artisan migrate --force || echo "Migraciones fallaron, continuando..." && \
+    php artisan config:cache || true && \
+    php artisan route:cache || true && \
+    php artisan view:cache || true && \
     php artisan serve --host=0.0.0.0 --port=${PORT:-10000}
