@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
 use App\Livewire\ParametrosIndex;
 use App\Livewire\ParametrosForm;
 use App\Livewire\UsuariosIndex;
@@ -74,6 +75,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
             $cliente = \App\Models\Cliente::findOrFail($id);
             return view('clientes.show', compact('cliente'));
         })->name('show');
+    });
+
+    Route::get('/dbtest', function () {
+        try {
+            DB::connection()->getPdo();
+            return '✅ Conexión a base de datos exitosa';
+        } catch (\Exception $e) {
+            return '❌ Error de conexión: ' . $e->getMessage();
+        }
     });
 });
 
