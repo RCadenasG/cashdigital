@@ -85,6 +85,32 @@ Route::middleware(['auth', 'verified'])->group(function () {
             return '❌ Error de conexión: ' . $e->getMessage();
         }
     });
+
+    Route::get('/', function () {
+    try {
+        return response()->json([
+            'status' => 'online',
+            'app' => 'CashDigital',
+            'environment' => config('app.env'),
+            'php_version' => phpversion(),
+            'laravel_version' => app()->version(),
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+        ], 500);
+    }
+    });
+
+    Route::get('/test', function () {
+        return response()->json(['message' => 'Test OK']);
+    });
+
+    Route::get('/health', function () {
+        return response()->json(['status' => 'healthy']);
+    });
 });
 
 require __DIR__.'/auth.php';
