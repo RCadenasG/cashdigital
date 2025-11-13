@@ -85,6 +85,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
             return '❌ Error de conexión: ' . $e->getMessage();
         }
     });
+
+    Route::get('/', function () {
+        return response()->json([
+            'status' => 'online',
+            'app' => 'CashDigital',
+            'timestamp' => now()->toIso8601String(),
+        ]);
+    });
+
+    Route::get('/test', function () {
+        return response()->json(['message' => 'Test OK']);
+    });
+
+    Route::get('/health', function () {
+        return response()->json(['status' => 'healthy']);
+    });
+
 });
 
 require __DIR__.'/auth.php';
