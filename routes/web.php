@@ -16,26 +16,30 @@ use App\Http\Controllers\ExportController;
 use App\Http\Controllers\ProfileController;
 
 // Rutas públicas SIN middleware de autenticación
-Route::get('/health', function () {
-    return response()->json(['status' => 'healthy', 'timestamp' => now()]);
-});
-
-Route::get('/test', function () {
-    return response()->json(['message' => 'Test OK', 'app' => 'CashDigital']);
-});
-
-Route::get('/api/status', function () {
-    return response()->json([
-        'status' => 'online',
-        'app' => config('app.name'),
-        'environment' => config('app.env'),
-        'php_version' => phpversion(),
-        'laravel_version' => app()->version(),
-    ]);
-});
+// Route::get('/health', function () {
+//     return response()->json(['status' => 'healthy', 'timestamp' => now()]);
+// });
+//
+// Route::get('/test', function () {
+//     return response()->json(['message' => 'Test OK', 'app' => 'CashDigital']);
+// });
+//
+// Route::get('/api/status', function () {
+//     return response()->json([
+//         'status' => 'online',
+//         'app' => config('app.name'),
+//         'environment' => config('app.env'),
+//         'php_version' => phpversion(),
+//         'laravel_version' => app()->version(),
+//     ]);
+// });
+// Route::redirect('/', '/dashboard');
 
 // El resto de tus rutas aquí...
-Route::redirect('/', '/dashboard');
+
+Route::get('/', function () {
+    return redirect('/login');
+});
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
