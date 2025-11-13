@@ -38,8 +38,8 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Establece el directorio de trabajo
 WORKDIR /var/www/html
 
-# Copia archivos de composer primero
-COPY composer.json composer.lock* ./
+# Copia TODO el proyecto
+COPY . .
 
 # Configura Composer
 RUN composer config --global process-timeout 6000 && \
@@ -51,44 +51,18 @@ RUN composer config --global process-timeout 6000 && \
 # Limpia caché de Composer
 RUN composer clear-cache
 
-# Copia archivos necesarios ANTES de composer install
-COPY artisan ./
-COPY bootstrap bootstrap/
-COPY config config/
-COPY database database/
-COPY app app/
-COPY routes routes/
-COPY resources resources/
-COPY public public/
-COPY storage storage/
-
-# Instala dependencias SIN ejecutar scripts
+# Instala dependencias
 RUN COMPOSER_MEMORY_LIMIT=-1 \
     COMPOSER_ALLOW_SUPERUSER=1 \
-    COMPOSER_NO_INTERACTION=1 \
     composer install \
     --no-dev \
     --optimize-autoloader \
     --no-interaction \
     --no-scripts \
-    --prefer-dist \
-    --classmap-authoritative \
-    2>&1 || (echo "===== COMPOSER INSTALL FALLÓ, INTENTANDO UPDATE =====" && \
-        COMPOSER_MEMORY_LIMIT=-1 \
-        COMPOSER_ALLOW_SUPERUSER=1 \
-        composer update \
-        --no-dev \
-        --optimize-autoloader \
-        --no-interaction \
-        --no-scripts \
-        --prefer-dist \
-        --classmap-authoritative)
+    --prefer-dist
 
-# AHORA copia el resto de la aplicación (si falta algo)
-COPY . .
-
-# Ejecuta scripts post-install DESPUÉS de tener todo copiado
-RUN composer dump-autoload --optimize --classmap-authoritative || true
+# Dump autoload
+RUN composer dump-autoload --optimize
 
 # Copia configuraciones de Nginx y Supervisord
 COPY .tender/nginx/default.conf /etc/nginx/sites-available/default
@@ -98,13 +72,12 @@ COPY .tender/supervisord/supervisord.conf /etc/supervisor/conf.d/supervisord.con
 RUN mkdir -p /var/log/supervisor \
     && mkdir -p /run/php \
     && mkdir -p /var/log/nginx \
-    && mkdir -p /var/www/html/storage/framework/cache \
-    && mkdir -p /var/www/html/storage/framework/sessions \
-    && mkdir -p /var/www/html/storage/framework/views \
-    && mkdir -p /var/www/html/storage/logs \
-    && chown -R www-data:www-data /var/www/html \
-    && chmod -R 775 /var/www/html/storage \
-    && chmod -R 775 /var/www/html/bootstrap/cache
+    && mkdir -p storage/framework/cache \
+    && mkdir -p storage/framework/sessions \
+    && mkdir -p storage/framework/views \
+    && mkdir -p storage/logs \
+    && chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
 
 # Variables de entorno para Laravel
 ENV APP_ENV=production
@@ -113,54 +86,55 @@ ENV APP_DEBUG=true
 # Expone el puerto
 EXPOSE 10000
 
-# Crea script de inicio SIMPLIFICADO (sin usar env() en php -r)
-RUN printf '#!/bin/bash\n\
-set -e\n\
-echo "=== Verificando archivo index.php ==="\n\
-if [ -f /var/www/html/public/index.php ]; then\n\
-  echo "✓ index.php encontrado"\n\
-  ls -lh /var/www/html/public/index.php\n\
-else\n\
-  echo "✗ ERROR: index.php NO encontrado"\n\
-  exit 1\n\
-fi\n\
-echo ""\n\
-echo "=== Verificando autoloader ==="\n\
-if [ -f /var/www/html/vendor/autoload.php ]; then\n\
-  echo "✓ vendor/autoload.php encontrado"\n\
-else\n\
-  echo "✗ ERROR: vendor/autoload.php NO encontrado"\n\
-  exit 1\n\
-fi\n\
-echo ""\n\
-echo "=== Verificando permisos ==="\n\
-chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache\n\
-chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache\n\
-echo ""\n\
-echo "=== Limpiando cachés ==="\n\
-php artisan config:clear || true\n\
-php artisan route:clear || true\n\
-php artisan cache:clear || true\n\
-php artisan view:clear || true\n\
-echo ""\n\
-echo "=== Ejecutando migraciones ==="\n\
-php artisan migrate --force || echo "⚠ Migraciones fallaron, continuando..."\n\
-echo ""\n\
-echo "=== Ejecutando package:discover ==="\n\
-php artisan package:discover --ansi || true\n\
-echo ""\n\
-echo "=== Cachear configuración ==="\n\
-php artisan config:cache || true\n\
-php artisan route:cache || true\n\
-echo ""\n\
-echo "=== Rutas registradas ==="\n\
-php artisan route:list || true\n\
-echo ""\n\
-echo "=== Variables de entorno ==="\n\
-printenv | grep -E "APP_|DB_" || true\n\
-echo ""\n\
-echo "=== Iniciando servicios ==="\n\
-exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf\n' > /start.sh \
-    && chmod +x /start.sh
+# Crea script de inicio
+COPY <<'EOF' /start.sh
+#!/bin/bash
+set -e
+
+echo "=== Iniciando CashDigital ==="
+echo ""
+
+# Verificar archivos críticos
+echo "Verificando estructura..."
+ls -la public/index.php
+ls -la vendor/autoload.php
+echo ""
+
+# Permisos
+echo "Configurando permisos..."
+chown -R www-data:www-data storage bootstrap/cache
+chmod -R 775 storage bootstrap/cache
+echo ""
+
+# Limpiar cachés
+echo "Limpiando cachés..."
+php artisan config:clear
+php artisan route:clear
+php artisan cache:clear
+php artisan view:clear
+echo ""
+
+# Migraciones
+echo "Ejecutando migraciones..."
+php artisan migrate --force || echo "Migraciones omitidas"
+echo ""
+
+# Optimizar
+echo "Optimizando aplicación..."
+php artisan config:cache
+php artisan route:cache
+echo ""
+
+# Listar rutas
+echo "Rutas disponibles:"
+php artisan route:list
+echo ""
+
+# Iniciar servicios
+echo "Iniciando Nginx y PHP-FPM..."
+exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
+EOF
+
+RUN chmod +x /start.sh
 
 CMD ["/start.sh"]
