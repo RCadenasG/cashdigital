@@ -33,9 +33,10 @@ Route::get('/api/status', function () {
     ]);
 });
 
+// Ruta raíz - SOLO UNA VEZ
 Route::get('/', function () {
     return redirect('/login');
-});
+})->name('home');
 
 // El resto de tus rutas aquí...
 
@@ -51,25 +52,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::prefix('parametros')->name('parametros.')->group(function () {
-        Route::get('/', ParametrosIndex::class)->name('index');
+        // Route::get('/', ParametrosIndex::class)->name('index');
         Route::get('/crear', ParametrosForm::class)->name('create');
         Route::get('/{id}/editar', ParametrosForm::class)->name('edit');
     });
 
     Route::prefix('usuarios')->name('usuarios.')->group(function () {
-        Route::get('/', UsuariosIndex::class)->name('index');
+        // Route::get('/', UsuariosIndex::class)->name('index');
         Route::get('/crear', UsuariosForm::class)->name('create');
         Route::get('/{id}/editar', UsuariosForm::class)->name('edit');
     });
 
     Route::prefix('roles')->name('roles.')->group(function () {
-        Route::get('/', RolesIndex::class)->name('index');
+        // Route::get('/', RolesIndex::class)->name('index');
         Route::get('/create', RolesForm::class)->name('create');
         Route::get('/{id}/edit', RolesForm::class)->name('edit');
     });
 
     Route::prefix('clientes')->name('clientes.')->group(function () {
-        Route::get('/', ClientesIndex::class)->name('index');
+        // Route::get('/', ClientesIndex::class)->name('index');
         Route::get('/crear', ClientesForm::class)->name('create');
         Route::get('/{id}/editar', ClientesForm::class)->name('edit');
         Route::get('/{id}', function($id) {
@@ -79,7 +80,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::prefix('operaciones')->name('operaciones.')->group(function () {
-        Route::get('/', OperacionesIndex::class)->name('index');
+        // Route::get('/', OperacionesIndex::class)->name('index');
         Route::get('/crear', OperacionesForm::class)->name('create');
         Route::get('/{id}/editar', OperacionesForm::class)->name('edit');
         Route::get('/{id}', function($id) {
