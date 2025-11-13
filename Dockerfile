@@ -51,7 +51,15 @@ RUN composer config --global process-timeout 6000 && \
 # Limpia caché de Composer
 RUN composer clear-cache
 
-# Instala dependencias
+# Copia archivos necesarios ANTES de composer install
+COPY artisan ./
+COPY bootstrap bootstrap/
+COPY config config/
+COPY database database/
+COPY app app/
+COPY routes routes/
+
+# Instala dependencias SIN ejecutar scripts
 RUN COMPOSER_MEMORY_LIMIT=-1 \
     COMPOSER_ALLOW_SUPERUSER=1 \
     COMPOSER_NO_INTERACTION=1 \
@@ -62,25 +70,22 @@ RUN COMPOSER_MEMORY_LIMIT=-1 \
     --no-scripts \
     --prefer-dist \
     --classmap-authoritative \
-    2>&1 | tee /tmp/composer-install.log \
-    || (echo "===== COMPOSER INSTALL FALLÓ =====" && \
-        cat /tmp/composer-install.log && \
-        echo "===== INTENTANDO UPDATE =====" && \
-        COMPOSER_MEMORY_LIMIT=-1 \
-        COMPOSER_ALLOW_SUPERUSER=1 \
-        composer update \
-        --no-dev \
-        --optimize-autoloader \
-        --no-interaction \
-        --no-scripts \
-        --prefer-dist \
-        --classmap-authoritative)
+    2>&1 || (echo "===== COMPOSER INSTALL FALLÓ, INTENTANDO UPDATE =====" && \
+    COMPOSER_MEMORY_LIMIT=-1 \
+    COMPOSER_ALLOW_SUPERUSER=1 \
+    composer update \
+    --no-dev \
+    --optimize-autoloader \
+    --no-interaction \
+    --no-scripts \
+    --prefer-dist \
+    --classmap-authoritative)
 
-# Copia el resto de la aplicación
+# AHORA copia el resto de la aplicación
 COPY . .
 
-# Ejecuta scripts post-install
-RUN composer run-script post-autoload-dump --no-interaction || true
+# Ejecuta scripts post-install DESPUÉS de tener todo copiado
+RUN composer dump-autoload --optimize --classmap-authoritative || true
 
 # Copia configuraciones de Nginx y Supervisord
 COPY .tender/nginx/default.conf /etc/nginx/sites-available/default
@@ -107,43 +112,46 @@ EXPOSE 10000
 
 # Crea script de inicio con diagnósticos
 RUN printf '#!/bin/bash\n\
-set -e\n\
-echo "=== Verificando archivo index.php ==="\n\
-if [ -f /var/www/html/public/index.php ]; then\n\
-  echo "✓ index.php encontrado"\n\
-  ls -lh /var/www/html/public/index.php\n\
-else\n\
-  echo "✗ ERROR: index.php NO encontrado"\n\
-  exit 1\n\
-fi\n\
-echo ""\n\
-echo "=== Verificando permisos ==="\n\
-chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache\n\
-chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache\n\
-echo ""\n\
-echo "=== Limpiando cachés ==="\n\
-php artisan config:clear || true\n\
-php artisan route:clear || true\n\
-php artisan cache:clear || true\n\
-php artisan view:clear || true\n\
-echo ""\n\
-echo "=== Ejecutando migraciones ==="\n\
-php artisan migrate --force || echo "⚠ Migraciones fallaron, continuando..."\n\
-echo ""\n\
-echo "=== Cachear configuración ==="\n\
-php artisan config:cache || true\n\
-php artisan route:cache || true\n\
-echo ""\n\
-echo "=== Rutas registradas ==="\n\
-php artisan route:list || true\n\
-echo ""\n\
-echo "=== Verificando variables de entorno críticas ==="\n\
-php -r "echo \"APP_ENV: \" . env(\"APP_ENV\") . \"\\n\";" || true\n\
-php -r "echo \"APP_KEY existe: \" . (env(\"APP_KEY\") ? \"SI\" : \"NO\") . \"\\n\";" || true\n\
-php -r "echo \"DB_CONNECTION: \" . env(\"DB_CONNECTION\") . \"\\n\";" || true\n\
-echo ""\n\
-echo "=== Iniciando servicios ==="\n\
-exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf\n' > /start.sh \
+    set -e\n\
+    echo "=== Verificando archivo index.php ==="\n\
+    if [ -f /var/www/html/public/index.php ]; then\n\
+    echo "✓ index.php encontrado"\n\
+    ls -lh /var/www/html/public/index.php\n\
+    else\n\
+    echo "✗ ERROR: index.php NO encontrado"\n\
+    exit 1\n\
+    fi\n\
+    echo ""\n\
+    echo "=== Verificando permisos ==="\n\
+    chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache\n\
+    chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache\n\
+    echo ""\n\
+    echo "=== Limpiando cachés ==="\n\
+    php artisan config:clear || true\n\
+    php artisan route:clear || true\n\
+    php artisan cache:clear || true\n\
+    php artisan view:clear || true\n\
+    echo ""\n\
+    echo "=== Ejecutando migraciones ==="\n\
+    php artisan migrate --force || echo "⚠ Migraciones fallaron, continuando..."\n\
+    echo ""\n\
+    echo "=== Ejecutando package:discover ==="\n\
+    php artisan package:discover --ansi || true\n\
+    echo ""\n\
+    echo "=== Cachear configuración ==="\n\
+    php artisan config:cache || true\n\
+    php artisan route:cache || true\n\
+    echo ""\n\
+    echo "=== Rutas registradas ==="\n\
+    php artisan route:list || true\n\
+    echo ""\n\
+    echo "=== Verificando variables de entorno críticas ==="\n\
+    php -r "echo \"APP_ENV: \" . env(\"APP_ENV\") . \"\\\\n\";" || true\n\
+    php -r "echo \"APP_KEY existe: \" . (env(\"APP_KEY\") ? \"SI\" : \"NO\") . \"\\\\n\";" || true\n\
+    php -r "echo \"DB_CONNECTION: \" . env(\"DB_CONNECTION\") . \"\\\\n\";" || true\n\
+    echo ""\n\
+    echo "=== Iniciando servicios ==="\n\
+    exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf\n' > /start.sh \
     && chmod +x /start.sh
 
 CMD ["/start.sh"]
