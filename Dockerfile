@@ -33,23 +33,39 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Establece el directorio de trabajo
 WORKDIR /var/www/html
 
-# Copia archivos de composer
+# Copia archivos de composer primero
 COPY composer.json composer.lock* ./
 
-# Configura Composer
-RUN composer config --global process-timeout 2000 && \
+# Configura Composer con timeouts más largos y configuración optimizada
+RUN composer config --global process-timeout 3000 && \
     composer config --global allow-plugins true && \
-    composer config platform.php 8.3.13
+    composer config platform.php 8.3.13 && \
+    composer config --global cache-dir /tmp/composer-cache && \
+    composer config --global discard-changes true
 
-# Usa UPDATE para regenerar el lock file y resolver conflictos
+# Intenta install primero (más rápido si el lock existe y es válido)
+# Si falla, usa update como fallback
 RUN COMPOSER_MEMORY_LIMIT=-1 \
+    COMPOSER_ALLOW_SUPERUSER=1 \
+    composer install \
+    --no-dev \
+    --optimize-autoloader \
+    --no-interaction \
+    --no-scripts \
+    --prefer-dist \
+    --no-progress \
+    --verbose \
+    || (echo "Install falló, intentando update..." && \
+    COMPOSER_MEMORY_LIMIT=-1 \
     COMPOSER_ALLOW_SUPERUSER=1 \
     composer update \
     --no-dev \
     --optimize-autoloader \
     --no-interaction \
     --no-scripts \
-    --prefer-dist
+    --prefer-dist \
+    --no-progress \
+    --verbose)
 
 # Copia el resto de la aplicación
 COPY . .
