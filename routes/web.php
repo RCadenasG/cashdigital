@@ -1,5 +1,6 @@
 FROM php:8.3-fpm
 
+# Fuerza nuevo commit
 # Instala dependencias del sistema incluyendo Nginx y Supervisor
 RUN apt-get update && apt-get install -y \
     git \
