@@ -1,141 +1,90 @@
-FROM php:8.3-fpm
+<?php
 
-# Fuerza nuevo commit
-# Instala dependencias del sistema incluyendo Nginx y Supervisor
-RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    libpng-dev \
-    libonig-dev \
-    libxml2-dev \
-    libzip-dev \
-    libpq-dev \
-    zip \
-    unzip \
-    nginx \
-    supervisor \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
+use App\Livewire\ParametrosIndex;
+use App\Livewire\ParametrosForm;
+use App\Livewire\UsuariosIndex;
+use App\Livewire\UsuariosForm;
+use App\Livewire\RolesIndex;
+use App\Livewire\RolesForm;
+use App\Livewire\ClientesIndex;
+use App\Livewire\ClientesForm;
+use App\Livewire\OperacionesIndex;
+use App\Livewire\OperacionesForm;
+use App\Http\Controllers\ExportController;
+use App\Http\Controllers\ProfileController;
 
-# Instala extensiones de PHP
-RUN docker-php-ext-install \
-    pdo_pgsql \
-    pgsql \
-    mbstring \
-    exif \
-    pcntl \
-    bcmath \
-    gd \
-    zip
+Route::redirect('/', '/dashboard');
 
-# Configura PHP-FPM para escuchar en puerto TCP
-RUN sed -i 's/listen = \/run\/php\/php8.3-fpm.sock/listen = 127.0.0.1:9000/' /usr/local/etc/php-fpm.d/www.conf && \
-    sed -i 's/;listen.owner = www-data/listen.owner = www-data/' /usr/local/etc/php-fpm.d/www.conf && \
-    sed -i 's/;listen.group = www-data/listen.group = www-data/' /usr/local/etc/php-fpm.d/www.conf
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/dashboard', function () {
+        return view('dashboard');
+    })->name('dashboard');
 
-# Instala Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+    Route::middleware('auth')->group(function () {
+        Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+        Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+        Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    });
 
-# Establece el directorio de trabajo
-WORKDIR /var/www/html
+    Route::prefix('parametros')->name('parametros.')->group(function () {
+        Route::get('/', ParametrosIndex::class)->name('index');
+        Route::get('/crear', ParametrosForm::class)->name('create');
+        Route::get('/{id}/editar', ParametrosForm::class)->name('edit');
+    });
 
-# Copia TODO el proyecto
-COPY . .
+    Route::prefix('usuarios')->name('usuarios.')->group(function () {
+        Route::get('/', UsuariosIndex::class)->name('index');
+        Route::get('/crear', UsuariosForm::class)->name('create');
+        Route::get('/{id}/editar', UsuariosForm::class)->name('edit');
+    });
 
-# Configura Composer
-RUN composer config --global process-timeout 6000 && \
-    composer config --global allow-plugins true && \
-    composer config platform.php 8.3.13 && \
-    composer config --global discard-changes true && \
-    composer config --global preferred-install dist
+    Route::prefix('roles')->name('roles.')->group(function () {
+        Route::get('/', RolesIndex::class)->name('index');
+        Route::get('/create', RolesForm::class)->name('create');
+        Route::get('/{id}/edit', RolesForm::class)->name('edit');
+    });
 
-# Limpia caché de Composer
-RUN composer clear-cache
+    Route::prefix('clientes')->name('clientes.')->group(function () {
+        Route::get('/', ClientesIndex::class)->name('index');
+        Route::get('/crear', ClientesForm::class)->name('create');
+        Route::get('/{id}/editar', ClientesForm::class)->name('edit');
+        Route::get('/{id}', function($id) {
+            $cliente = \App\Models\Cliente::findOrFail($id);
+            return view('clientes.show', compact('cliente'));
+        })->name('show');
+    });
 
-# Instala dependencias
-RUN COMPOSER_MEMORY_LIMIT=-1 \
-    COMPOSER_ALLOW_SUPERUSER=1 \
-    composer install \
-    --no-dev \
-    --optimize-autoloader \
-    --no-interaction \
-    --no-scripts \
-    --prefer-dist
+    Route::prefix('operaciones')->name('operaciones.')->group(function () {
+        Route::get('/', OperacionesIndex::class)->name('index');
+        Route::get('/crear', OperacionesForm::class)->name('create');
+        Route::get('/{id}/editar', OperacionesForm::class)->name('edit');
+        Route::get('/{id}', function($id) {
+            $operacion = \App\Models\Operacion::with(['cliente', 'usuario', 'parametroServicio'])->findOrFail($id);
+            return view('operaciones.show', compact('operacion'));
+        })->name('show');
+    });
 
-# Dump autoload
-RUN composer dump-autoload --optimize
+    Route::prefix('exportar')->name('export.')->group(function () {
+        Route::get('parametros/excel', [ExportController::class, 'parametrosExcel'])->name('parametros.excel');
+        Route::get('parametros/pdf', [ExportController::class, 'parametrosPdf'])->name('parametros.pdf');
+        Route::get('usuarios/excel', [ExportController::class, 'usuariosExcel'])->name('usuarios.excel');
+        Route::get('usuarios/pdf', [ExportController::class, 'usuariosPdf'])->name('usuarios.pdf');
+        Route::get('clientes/excel', [ExportController::class, 'clientesExcel'])->name('clientes.excel');
+        Route::get('clientes/pdf', [ExportController::class, 'clientesPdf'])->name('clientes.pdf');
+        Route::get('operaciones/excel', [ExportController::class, 'operacionesExcel'])->name('operaciones.excel');
+        Route::get('operaciones/pdf', [ExportController::class, 'operacionesPdf'])->name('operaciones.pdf');
+    });
 
-# Copia configuraciones de Nginx y Supervisord
-COPY .tender/nginx/default.conf /etc/nginx/sites-available/default
-COPY .tender/supervisord/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+    Route::get('/dbtest', function () {
+        try {
+            DB::connection()->getPdo();
+            return '✅ Conexión a base de datos exitosa';
+        } catch (\Exception $e) {
+            return '❌ Error de conexión: ' . $e->getMessage();
+        }
+    });
+});
 
-# Crea directorios necesarios y establece permisos
-RUN mkdir -p /var/log/supervisor \
-    && mkdir -p /run/php \
-    && mkdir -p /var/log/nginx \
-    && mkdir -p storage/framework/cache \
-    && mkdir -p storage/framework/sessions \
-    && mkdir -p storage/framework/views \
-    && mkdir -p storage/logs \
-    && chown -R www-data:www-data storage bootstrap/cache \
-    && chmod -R 775 storage bootstrap/cache
-
-# Variables de entorno para Laravel
-ENV APP_ENV=production
-ENV APP_DEBUG=true
-
-# Expone el puerto
-EXPOSE 10000
-
-# Crea script de inicio
-COPY <<'EOF' /start.sh
-#!/bin/bash
-set -e
-
-echo "=== Iniciando CashDigital ==="
-echo ""
-
-# Verificar archivos críticos
-echo "Verificando estructura..."
-ls -la public/index.php
-ls -la vendor/autoload.php
-echo ""
-
-# Permisos
-echo "Configurando permisos..."
-chown -R www-data:www-data storage bootstrap/cache
-chmod -R 775 storage bootstrap/cache
-echo ""
-
-# Limpiar cachés
-echo "Limpiando cachés..."
-php artisan config:clear
-php artisan route:clear
-php artisan cache:clear
-php artisan view:clear
-echo ""
-
-# Migraciones
-echo "Ejecutando migraciones..."
-php artisan migrate --force || echo "Migraciones omitidas"
-echo ""
-
-# Optimizar
-echo "Optimizando aplicación..."
-php artisan config:cache
-php artisan route:cache
-echo ""
-
-# Listar rutas
-echo "Rutas disponibles:"
-php artisan route:list
-echo ""
-
-# Iniciar servicios
-echo "Iniciando Nginx y PHP-FPM..."
-exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
-EOF
-
-RUN chmod +x /start.sh
-
-CMD ["/start.sh"]
+require __DIR__.'/auth.php';
