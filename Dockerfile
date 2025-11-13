@@ -84,4 +84,66 @@ RUN composer run-script post-autoload-dump --no-interaction || true
 
 # Copia configuraciones de Nginx y Supervisord
 COPY .tender/nginx/default.conf /etc/nginx/sites-available/default
-COPY .ten
+COPY .tender/supervisord/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Crea directorios necesarios y establece permisos
+RUN mkdir -p /var/log/supervisor \
+    && mkdir -p /run/php \
+    && mkdir -p /var/log/nginx \
+    && mkdir -p /var/www/html/storage/framework/cache \
+    && mkdir -p /var/www/html/storage/framework/sessions \
+    && mkdir -p /var/www/html/storage/framework/views \
+    && mkdir -p /var/www/html/storage/logs \
+    && chown -R www-data:www-data /var/www/html \
+    && chmod -R 775 /var/www/html/storage \
+    && chmod -R 775 /var/www/html/bootstrap/cache
+
+# Variables de entorno para Laravel
+ENV APP_ENV=production
+ENV APP_DEBUG=true
+
+# Expone el puerto
+EXPOSE 10000
+
+# Crea script de inicio con diagnósticos
+RUN printf '#!/bin/bash\n\
+set -e\n\
+echo "=== Verificando archivo index.php ==="\n\
+if [ -f /var/www/html/public/index.php ]; then\n\
+  echo "✓ index.php encontrado"\n\
+  ls -lh /var/www/html/public/index.php\n\
+else\n\
+  echo "✗ ERROR: index.php NO encontrado"\n\
+  exit 1\n\
+fi\n\
+echo ""\n\
+echo "=== Verificando permisos ==="\n\
+chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache\n\
+chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache\n\
+echo ""\n\
+echo "=== Limpiando cachés ==="\n\
+php artisan config:clear || true\n\
+php artisan route:clear || true\n\
+php artisan cache:clear || true\n\
+php artisan view:clear || true\n\
+echo ""\n\
+echo "=== Ejecutando migraciones ==="\n\
+php artisan migrate --force || echo "⚠ Migraciones fallaron, continuando..."\n\
+echo ""\n\
+echo "=== Cachear configuración ==="\n\
+php artisan config:cache || true\n\
+php artisan route:cache || true\n\
+echo ""\n\
+echo "=== Rutas registradas ==="\n\
+php artisan route:list || true\n\
+echo ""\n\
+echo "=== Verificando variables de entorno críticas ==="\n\
+php -r "echo \"APP_ENV: \" . env(\"APP_ENV\") . \"\\n\";" || true\n\
+php -r "echo \"APP_KEY existe: \" . (env(\"APP_KEY\") ? \"SI\" : \"NO\") . \"\\n\";" || true\n\
+php -r "echo \"DB_CONNECTION: \" . env(\"DB_CONNECTION\") . \"\\n\";" || true\n\
+echo ""\n\
+echo "=== Iniciando servicios ==="\n\
+exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf\n' > /start.sh \
+    && chmod +x /start.sh
+
+CMD ["/start.sh"]
