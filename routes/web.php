@@ -15,6 +15,26 @@ use App\Livewire\OperacionesForm;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\ProfileController;
 
+// Rutas públicas SIN middleware de autenticación
+Route::get('/health', function () {
+    return response()->json(['status' => 'healthy', 'timestamp' => now()]);
+});
+
+Route::get('/test', function () {
+    return response()->json(['message' => 'Test OK', 'app' => 'CashDigital']);
+});
+
+Route::get('/api/status', function () {
+    return response()->json([
+        'status' => 'online',
+        'app' => config('app.name'),
+        'environment' => config('app.env'),
+        'php_version' => phpversion(),
+        'laravel_version' => app()->version(),
+    ]);
+});
+
+// El resto de tus rutas aquí...
 Route::redirect('/', '/dashboard');
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -75,31 +95,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('clientes/pdf', [ExportController::class, 'clientesPdf'])->name('clientes.pdf');
         Route::get('operaciones/excel', [ExportController::class, 'operacionesExcel'])->name('operaciones.excel');
         Route::get('operaciones/pdf', [ExportController::class, 'operacionesPdf'])->name('operaciones.pdf');
-    });
-
-    Route::get('/dbtest', function () {
-        try {
-            DB::connection()->getPdo();
-            return '✅ Conexión a base de datos exitosa';
-        } catch (\Exception $e) {
-            return '❌ Error de conexión: ' . $e->getMessage();
-        }
-    });
-
-    Route::get('/', function () {
-        return response()->json([
-            'status' => 'online',
-            'app' => 'CashDigital',
-            'timestamp' => now()->toIso8601String(),
-        ]);
-    });
-
-    Route::get('/test', function () {
-        return response()->json(['message' => 'Test OK']);
-    });
-
-    Route::get('/health', function () {
-        return response()->json(['status' => 'healthy']);
     });
 
 });
