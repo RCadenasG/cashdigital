@@ -1,6 +1,6 @@
-FROM php:8.3-cli
+FROM php:8.3-fpm
 
-# Instala dependencias del sistema
+# Instala dependencias del sistema incluyendo Nginx y Supervisor
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -11,6 +11,8 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     zip \
     unzip \
+    nginx \
+    supervisor \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -52,8 +54,16 @@ RUN COMPOSER_MEMORY_LIMIT=-1 \
 # Copia el resto de la aplicación
 COPY . .
 
-# Ejecuta scripts post-install (si los necesitas)
+# Ejecuta scripts post-install
 RUN composer run-script post-autoload-dump --no-interaction || true
+
+# Copia configuraciones de Nginx y Supervisord
+COPY .tender/nginx/default.conf /etc/nginx/sites-available/default
+COPY .tender/supervisord/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Crea directorios necesarios
+RUN mkdir -p /var/log/supervisor \
+    && mkdir -p /run/php
 
 # Establece permisos
 RUN chown -R www-data:www-data /var/www/html && \
@@ -64,11 +74,16 @@ RUN chown -R www-data:www-data /var/www/html && \
 ENV APP_ENV=production
 ENV APP_DEBUG=false
 
+# Expone el puerto
 EXPOSE 10000
 
-# Script de inicio con migraciones opcionales (usa || true para que no falle)
-CMD php artisan migrate --force || echo "Migraciones fallaron, continuando..." && \
-    php artisan config:cache || true && \
-    php artisan route:cache || true && \
-    php artisan view:cache || true && \
-    php artisan serve --host=0.0.0.0 --port=${PORT:-10000}
+# Crea script de inicio
+RUN echo '#!/bin/bash\n\
+php artisan migrate --force || echo "Migraciones fallaron, continuando..."\n\
+php artisan config:cache || true\n\
+php artisan route:cache || true\n\
+php artisan view:cache || true\n\
+exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf' > /start.sh \
+    && chmod +x /start.sh
+
+CMD ["/start.sh"]
