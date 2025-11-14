@@ -62,15 +62,53 @@ Route::get('/test-view', function () {
 
 Route::get('/test-auth-view', function () {
     try {
+        // Verificar que el layout existe
+        if (!view()->exists('layouts.guest')) {
+            return response()->json(['error' => 'Layout layouts.guest no existe']);
+        }
+
+        // Verificar componentes
+        $components = ['input-label', 'text-input', 'input-error', 'primary-button', 'auth-session-status'];
+        foreach ($components as $component) {
+            if (!view()->exists("components.$component")) {
+                return response()->json(['error' => "Componente components.$component no existe"]);
+            }
+        }
+
         return view('auth.login');
     } catch (\Exception $e) {
         return response()->json([
-            'error' => 'Auth view error',
-            'message' => $e->getMessage(),
+            'error' => $e->getMessage(),
             'file' => $e->getFile(),
             'line' => $e->getLine(),
+            'trace' => array_slice(explode("\n", $e->getTraceAsString()), 0, 10)
         ], 500);
     }
+});
+
+Route::get('/simple-login', function () {
+    return <<<'HTML'
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>CashDigital - Login</title>
+        <style>
+            body { font-family: Arial; max-width: 400px; margin: 50px auto; padding: 20px; }
+            input { width: 100%; padding: 10px; margin: 10px 0; }
+            button { width: 100%; padding: 10px; background: #4CAF50; color: white; border: none; cursor: pointer; }
+        </style>
+    </head>
+    <body>
+        <h2>CashDigital Login</h2>
+        <form method="POST" action="/login">
+            <input type="hidden" name="_token" value="<?php echo csrf_token(); ?>">
+            <input type="email" name="email" placeholder="Email" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit">Log in</button>
+        </form>
+    </body>
+    </html>
+    HTML;
 });
 
 // Ruta raíz
