@@ -15,6 +15,7 @@ use App\Livewire\OperacionesForm;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\ProfileController;
 
+// Rutas de health check
 Route::get('/health', function () {
     return response()->json(['status' => 'healthy', 'timestamp' => now()]);
 });
@@ -41,22 +42,8 @@ Route::get('/debug', function () {
     }
 });
 
-Route::get('/api/status', function () {
-    return response()->json([
-        'status' => 'online',
-        'app' => config('app.name'),
-        'environment' => config('app.env'),
-        'php_version' => phpversion(),
-        'laravel_version' => app()->version(),
-    ]);
-});
-
-// Ruta raíz - SOLO UNA VEZ
-Route::get('/', function () {
-    return redirect('/login');
-})->name('home');
-
-// El resto de tus rutas aquí...
+// Ruta raíz
+Route::redirect('/', '/login');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
@@ -70,25 +57,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::prefix('parametros')->name('parametros.')->group(function () {
-        // Route::get('/', ParametrosIndex::class)->name('index');
+        Route::get('/', ParametrosIndex::class)->name('index');
         Route::get('/crear', ParametrosForm::class)->name('create');
         Route::get('/{id}/editar', ParametrosForm::class)->name('edit');
     });
 
     Route::prefix('usuarios')->name('usuarios.')->group(function () {
-        // Route::get('/', UsuariosIndex::class)->name('index');
+        Route::get('/', UsuariosIndex::class)->name('index');
         Route::get('/crear', UsuariosForm::class)->name('create');
         Route::get('/{id}/editar', UsuariosForm::class)->name('edit');
     });
 
     Route::prefix('roles')->name('roles.')->group(function () {
-        // Route::get('/', RolesIndex::class)->name('index');
+        Route::get('/', RolesIndex::class)->name('index');
         Route::get('/create', RolesForm::class)->name('create');
         Route::get('/{id}/edit', RolesForm::class)->name('edit');
     });
 
     Route::prefix('clientes')->name('clientes.')->group(function () {
-        // Route::get('/', ClientesIndex::class)->name('index');
+        Route::get('/', ClientesIndex::class)->name('index');
         Route::get('/crear', ClientesForm::class)->name('create');
         Route::get('/{id}/editar', ClientesForm::class)->name('edit');
         Route::get('/{id}', function($id) {
@@ -98,7 +85,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::prefix('operaciones')->name('operaciones.')->group(function () {
-        // Route::get('/', OperacionesIndex::class)->name('index');
+        Route::get('/', OperacionesIndex::class)->name('index');
         Route::get('/crear', OperacionesForm::class)->name('create');
         Route::get('/{id}/editar', OperacionesForm::class)->name('edit');
         Route::get('/{id}', function($id) {
@@ -118,6 +105,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('operaciones/pdf', [ExportController::class, 'operacionesPdf'])->name('operaciones.pdf');
     });
 
+    Route::get('/dbtest', function () {
+        try {
+            DB::connection()->getPdo();
+            return '✅ Conexión a base de datos exitosa';
+        } catch (\Exception $e) {
+            return '❌ Error de conexión: ' . $e->getMessage();
+        }
+    });
 });
 
 require __DIR__.'/auth.php';
