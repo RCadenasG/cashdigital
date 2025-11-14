@@ -23,6 +23,24 @@ Route::get('/test', function () {
     return response()->json(['message' => 'Test OK', 'app' => 'CashDigital']);
 });
 
+Route::get('/debug', function () {
+    try {
+        return response()->json([
+            'php' => phpversion(),
+            'laravel' => app()->version(),
+            'db' => DB::connection()->getPdo() ? 'Connected' : 'Not connected',
+            'storage_writable' => is_writable(storage_path()),
+            'app_key' => config('app.key') ? 'Set' : 'Not set',
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+        ], 500);
+    }
+});
+
 Route::get('/api/status', function () {
     return response()->json([
         'status' => 'online',
