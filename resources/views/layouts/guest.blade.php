@@ -24,17 +24,25 @@
             min-height: 100vh;
             margin: 0;
         }
+
+        /* Responsive para móviles */
+        @media (max-width: 768px) {
+            body {
+                background-attachment: scroll;
+            }
+        }
     </style>
 </head>
 
 <body class="bg-dark text-white">
-    <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+    <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem;">
         <div class="card bg-dark border-secondary shadow-lg" style="width: 100%; max-width: 450px;">
-            <div class="card-body p-5">
+            <div class="card-body p-4">
+                <!-- Logo centrado -->
                 <div
                     style="display: flex; justify-content: center; align-items: center; width: 100%; margin-bottom: 1.5rem;">
                     <img src="{{ asset('img/logoCashDigital.jpg') }}" alt="Logo Cash Digital"
-                        style="height: 180px; display: block; margin: 0 auto;">
+                        style="height: 120px; display: block; margin: 0 auto;">
                 </div>
                 {{ $slot }}
             </div>

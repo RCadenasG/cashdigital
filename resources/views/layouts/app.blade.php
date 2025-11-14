@@ -37,6 +37,7 @@
             border-right: 1px solid #30363d;
             z-index: 1000;
             padding-top: 60px;
+            transition: transform 0.3s ease;
         }
 
         .main-content {
@@ -46,6 +47,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            transition: margin-left 0.3s ease;
         }
 
         .content-area {
@@ -123,6 +125,105 @@
         .dropdown-menu-custom a:hover {
             background: #0d6efd;
         }
+
+        /* Responsive para tablets */
+        @media (max-width: 992px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .top-navbar {
+                padding: 0 10px;
+            }
+        }
+
+        /* Responsive para móviles */
+        @media (max-width: 768px) {
+            .top-navbar {
+                flex-wrap: wrap;
+                height: auto;
+                min-height: 60px;
+            }
+
+            .top-navbar img {
+                height: 40px !important;
+            }
+
+            .top-navbar form {
+                font-size: 0.85rem;
+            }
+
+            .top-navbar .btn {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.85rem;
+            }
+
+            .sidebar {
+                width: 100%;
+            }
+
+            .content-area {
+                padding: 0.5rem !important;
+            }
+
+            .card-body {
+                padding: 1rem !important;
+            }
+
+            h1 {
+                font-size: 1.5rem !important;
+            }
+
+            .table-responsive {
+                font-size: 0.85rem;
+            }
+
+            .btn-group-sm .btn {
+                padding: 0.25rem 0.4rem;
+                font-size: 0.75rem;
+            }
+        }
+
+        /* Botón hamburguesa */
+        .hamburger-menu {
+            display: none;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+
+        @media (max-width: 992px) {
+            .hamburger-menu {
+                display: block;
+            }
+        }
+
+        /* Overlay para cerrar sidebar en móvil */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        .sidebar-overlay.show {
+            display: block;
+        }
     </style>
 
     @livewireStyles
@@ -130,28 +231,37 @@
 
 <body class="bg-dark text-white h-100">
 
+    <!-- Overlay para cerrar sidebar en móvil -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
     <!-- Top Navbar -->
     <div class="top-navbar">
-        <!-- Logo al extremo izquierdo -->
+        <!-- Botón hamburguesa -->
+        <button class="hamburger-menu" onclick="toggleSidebar()">
+            <i class="bi bi-list"></i>
+        </button>
+
+        <!-- Logo -->
         <div>
             <img src="{{ asset('img/logoCashDigital.jpg') }}" alt="Logo Cash Digital" style="height: 60px;">
         </div>
 
-        <!-- Profile y cerrar sesión al extremo derecho -->
-        <form method="POST" action="{{ route('logout') }}" class="m-0 d-flex align-items-center gap-3">
+        <!-- Profile y cerrar sesión -->
+        <form method="POST" action="{{ route('logout') }}" class="m-0 d-flex align-items-center gap-2 gap-md-3">
             @csrf
-            <i class="bi bi-person-gear"></i>
-            <a href="{{ route('profile.edit') }}" class="text-white text-decoration-none" style="margin-right: 1.5rem">
+            <i class="bi bi-person-gear d-none d-md-inline"></i>
+            <a href="{{ route('profile.edit') }}" class="text-white text-decoration-none d-none d-md-inline">
                 {{ Auth::user()->name }}
             </a>
             <button type="submit" class="btn btn-sm btn-outline-danger text-white">
-                <i class="bi bi-box-arrow-right me-1"></i> Cerrar sesión
+                <i class="bi bi-box-arrow-right me-1"></i>
+                <span class="d-none d-md-inline">Cerrar sesión</span>
             </button>
         </form>
     </div>
+
     <!-- Sidebar -->
     <nav id="sidebarMenu" class="sidebar d-lg-block bg-dark text-white">
-
         <div class="position-sticky">
             <div class="list-group list-group-flush mx-3 mt-4">
                 <a href="{{ route('dashboard') }}">
@@ -160,17 +270,30 @@
                         Menu Principal
                     </p>
                 </a>
+                <x-dropdown align="right" width="80">
+                    <x-slot name="trigger">
+                        <button type="button" class="sidebar-link dropdown-trigger">
+                            <i class="bi bi-list-ul"></i>
+                            <span class="flex-grow-1">Operaciones</span>
+                            <i class="bi bi-chevron-down ms-auto"></i>
+                        </button>
+                    </x-slot>
+                    <x-slot name="content">
+                        <div class="dropdown-menu-custom">
+                            <a href="{{ route('operaciones.index') }}">
+                                <i class="bi bi-cash-coin"></i> Gestión de Operaciones
+                            </a>
+                            <a href="{{ route('operaciones.create') }}">
+                                <i class="bi bi-plus-circle"></i> Nueva Operación
+                            </a>
+                        </div>
+                    </x-slot>
+                </x-dropdown>
 
                 <!-- Menu Clientes -->
                 <a href="{{ route('clientes.index') }}"
                     class="sidebar-link {{ request()->routeIs('clientes.*') ? 'active' : '' }}">
                     <i class="bi bi-people"></i> Clientes
-                </a>
-
-                <!-- Menu Operaciones -->
-                <a href="{{ route('operaciones.index') }}"
-                    class="sidebar-link {{ request()->routeIs('operaciones.*') ? 'active' : '' }}">
-                    <i class="bi bi-cash-coin"></i> Operaciones
                 </a>
 
                 @role('admin')
@@ -215,6 +338,24 @@
             <x-footer />
         </div>
     </main>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebarMenu');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('show');
+            overlay.classList.toggle('show');
+        }
+
+        // Cerrar sidebar al hacer clic en un enlace (solo en móvil)
+        if (window.innerWidth < 992) {
+            document.querySelectorAll('.sidebar-link').forEach(link => {
+                link.addEventListener('click', () => {
+                    toggleSidebar();
+                });
+            });
+        }
+    </script>
 
     @livewireScripts
 </body>
