@@ -17,7 +17,11 @@ use App\Http\Controllers\ProfileController;
 
 // Rutas de health check
 Route::get('/health', function () {
-    return response()->json(['status' => 'healthy', 'timestamp' => now()]);
+    return response()->json(['status' => 'ok'], 200);
+});
+
+Route::get('/up', function () {
+    return response('ok', 200);
 });
 
 Route::get('/test', function () {
@@ -45,17 +49,16 @@ Route::get('/debug', function () {
 // Ruta raíz
 Route::get('/', function () {
     return response()->json([
+        'status' => 'online',
         'app' => 'CashDigital',
-        'message' => 'API is running',
-        'login' => url('/login'),
+        'version' => '1.0.0',
         'endpoints' => [
-            'health' => '/health',
-            'test' => '/test',
-            'debug' => '/debug',
+            'login' => url('/login'),
+            'dashboard' => url('/dashboard'),
+            'health' => url('/health'),
         ]
-    ]);
+    ], 200);
 });
-
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
         return view('dashboard');
