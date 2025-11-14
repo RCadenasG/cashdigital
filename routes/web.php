@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Artisan;
 use App\Livewire\ParametrosIndex;
 use App\Livewire\ParametrosForm;
 use App\Livewire\UsuariosIndex;
@@ -86,12 +87,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('operaciones/pdf', [ExportController::class, 'operacionesPdf'])->name('operaciones.pdf');
     });
 
-    Route::get('/dbtest', function () {
+    Route::get('/admin/fresh-migrate', function () {
         try {
-            DB::connection()->getPdo();
-            return '✅ Conexión a base de datos exitosa';
+            Artisan::call('migrate:fresh', ['--force' => true, '--seed' => true]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Base de datos recreada con migraciones y seeders',
+                'output' => Artisan::output()
+            ]);
         } catch (\Exception $e) {
-            return '❌ Error de conexión: ' . $e->getMessage();
+            return response()->json([
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
         }
     });
 });
