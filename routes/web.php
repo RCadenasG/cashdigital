@@ -43,7 +43,18 @@ Route::get('/debug', function () {
 });
 
 // Ruta raíz
-Route::redirect('/', '/login');
+Route::get('/', function () {
+    return response()->json([
+        'app' => 'CashDigital',
+        'message' => 'API is running',
+        'login' => url('/login'),
+        'endpoints' => [
+            'health' => '/health',
+            'test' => '/test',
+            'debug' => '/debug',
+        ]
+    ]);
+});
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
