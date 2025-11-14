@@ -53,6 +53,7 @@ RUN echo '#!/bin/bash' > /start.sh && \
     echo 'rm -rf storage/framework/views/*' >> /start.sh && \
     echo 'echo "Migraciones..."' >> /start.sh && \
     echo 'php artisan migrate --force || echo "Migraciones omitidas"' >> /start.sh && \
+    echo 'php artisan db:seed --force || echo "Seeders omitidos"' >> /start.sh && \
     echo 'echo "Optimizando..."' >> /start.sh && \
     echo 'php artisan config:cache' >> /start.sh && \
     echo 'php artisan route:cache' >> /start.sh && \
