@@ -15,115 +15,17 @@ use App\Livewire\OperacionesForm;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\ProfileController;
 
+// Ruta raíz - redirige al login o muestra info
+Route::get('/', function () {
+    return redirect('/login');
+})->name('home');
+
 // Rutas de health check
 Route::get('/health', function () {
     return response()->json(['status' => 'ok'], 200);
 });
 
-Route::get('/up', function () {
-    return response('ok', 200);
-});
-
-Route::get('/test', function () {
-    return response()->json(['message' => 'Test OK', 'app' => 'CashDigital']);
-});
-
-Route::get('/debug', function () {
-    try {
-        return response()->json([
-            'php' => phpversion(),
-            'laravel' => app()->version(),
-            'db' => DB::connection()->getPdo() ? 'Connected' : 'Not connected',
-            'storage_writable' => is_writable(storage_path()),
-            'app_key' => config('app.key') ? 'Set' : 'Not set',
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'error' => $e->getMessage(),
-            'file' => $e->getFile(),
-            'line' => $e->getLine(),
-        ], 500);
-    }
-});
-
-Route::get('/test-view', function () {
-    try {
-        return view('welcome');
-    } catch (\Exception $e) {
-        return response()->json([
-            'error' => 'View error',
-            'message' => $e->getMessage(),
-            'file' => $e->getFile(),
-            'line' => $e->getLine(),
-            'trace' => explode("\n", $e->getTraceAsString())
-        ], 500);
-    }
-});
-
-Route::get('/test-auth-view', function () {
-    try {
-        // Verificar que el layout existe
-        if (!view()->exists('layouts.guest')) {
-            return response()->json(['error' => 'Layout layouts.guest no existe']);
-        }
-
-        // Verificar componentes
-        $components = ['input-label', 'text-input', 'input-error', 'primary-button', 'auth-session-status'];
-        foreach ($components as $component) {
-            if (!view()->exists("components.$component")) {
-                return response()->json(['error' => "Componente components.$component no existe"]);
-            }
-        }
-
-        return view('auth.login');
-    } catch (\Exception $e) {
-        return response()->json([
-            'error' => $e->getMessage(),
-            'file' => $e->getFile(),
-            'line' => $e->getLine(),
-            'trace' => array_slice(explode("\n", $e->getTraceAsString()), 0, 10)
-        ], 500);
-    }
-});
-
-Route::get('/simple-login', function () {
-    return <<<'HTML'
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>CashDigital - Login</title>
-        <style>
-            body { font-family: Arial; max-width: 400px; margin: 50px auto; padding: 20px; }
-            input { width: 100%; padding: 10px; margin: 10px 0; }
-            button { width: 100%; padding: 10px; background: #4CAF50; color: white; border: none; cursor: pointer; }
-        </style>
-    </head>
-    <body>
-        <h2>CashDigital Login</h2>
-        <form method="POST" action="/login">
-            <input type="hidden" name="_token" value="<?php echo csrf_token(); ?>">
-            <input type="email" name="email" placeholder="Email" required>
-            <input type="password" name="password" placeholder="Password" required>
-            <button type="submit">Log in</button>
-        </form>
-    </body>
-    </html>
-    HTML;
-});
-
-// Ruta raíz
-Route::get('/', function () {
-    return response()->json([
-        'status' => 'online',
-        'app' => 'CashDigital',
-        'version' => '1.0.0',
-        'endpoints' => [
-            'login' => url('/login'),
-            'dashboard' => url('/dashboard'),
-            'health' => url('/health'),
-        ]
-    ], 200);
-});
+// Rutas protegidas con autenticación
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
         return view('dashboard');
