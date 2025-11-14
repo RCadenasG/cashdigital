@@ -46,6 +46,33 @@ Route::get('/debug', function () {
     }
 });
 
+Route::get('/test-view', function () {
+    try {
+        return view('welcome');
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'View error',
+            'message' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => explode("\n", $e->getTraceAsString())
+        ], 500);
+    }
+});
+
+Route::get('/test-auth-view', function () {
+    try {
+        return view('auth.login');
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'Auth view error',
+            'message' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+        ], 500);
+    }
+});
+
 // Ruta raíz
 Route::get('/', function () {
     return response()->json([
